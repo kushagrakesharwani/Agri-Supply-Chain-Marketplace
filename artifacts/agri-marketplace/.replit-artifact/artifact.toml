@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "AgriLink Marketplace"
+description = "A mobile-friendly agricultural marketplace connecting farmers and FPOs directly with buyers. Users can select a role, publish produce listings, browse available crops, place orders, and track order status through completion."
+version = "1.0.0"
+id = "artifacts/agri-marketplace"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21674
+
+[services.development]
+run = "pnpm --filter @workspace/agri-marketplace run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/agri-marketplace", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/agri-marketplace/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21674"
+BASE_PATH = "/"
