@@ -1,6 +1,6 @@
-# [Project name]
+# Agri Supply Chain Marketplace
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Marketplace APIs that connect farmers and FPOs directly with buyers while making produce quantity, pricing, and order progress transparent.
 
 ## Run & Operate
 
@@ -22,15 +22,23 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/db/src/schema/` — Drizzle source of truth for users, produce listings, and orders
+- `lib/api-spec/openapi.yaml` — source of truth for the Marketplace API contract
+- `artifacts/api-server/src/routes/marketplace.ts` — Marketplace request validation and business rules
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Listings keep both original quantity and available quantity so placing an order is atomic and stock cannot be oversold.
+- Orders snapshot the listing price at placement time so later price edits do not change existing orders.
+- Seller roles are restricted to farmers and FPOs; only buyers can place orders.
+- Order status transitions are forward-only: Placed → Confirmed → Ready → Completed.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Create marketplace users as farmers, FPOs, or buyers.
+- Farmers and FPOs can create, update, and delete produce listings.
+- Buyers can search listings by crop and price range and place quantity-limited orders.
+- Buyers and sellers can view order progress through the four Marketplace statuses.
 
 ## User preferences
 

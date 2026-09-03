@@ -1,0 +1,174 @@
+# Product Requirements Document (PRD)
+## Agri-Supply Chain Platform — Core Features (Hackathon Build Phase)
+
+**Status:** Draft for build phase
+**Scope:** Core features only (Marketplace, Regional Language Support, Crop Quality Assessment, Scoped Logistics Support)
+**Out of scope for this phase:** AI-Powered Recommendations, AI-Based Demand Prediction, AI Voice Chatbot (see "Future/Stretch Features" at the end)
+
+---
+
+## 1. Problem Statement
+
+Multiple intermediaries in India's agricultural supply chain reduce farmer earnings and inflate consumer prices. Root causes include perishability, information asymmetry, lack of direct market access, fragmented small-scale farming, absent cold storage, and credit dependency on local agents. Farmers also lack a credible way to prove crop quality, which lets middlemen dispute quality on the spot to justify lower payouts.
+
+**Goal:** Reduce unnecessary intermediary layers and unfair margins — not eliminate intermediaries wholesale — by giving farmers/FPOs direct market access, transparent quality signals, and basic logistics coordination, modeled loosely on the Amul cooperative pattern applied to vegetables/produce.
+
+---
+
+## 2. Users / Personas
+
+| Persona | Description | Key needs |
+|---|---|---|
+| **Farmer (individual)** | Small/marginal landholder, sells produce, variable literacy/digital comfort | Fair price, simple listing flow, native language UI |
+| **FPO / Cooperative** | Aggregates produce from multiple farmers | Bulk listing, member management, aggregated pricing |
+| **Buyer (kirana/retailer)** | Small local shop owner buying regularly | Reliable supply, quality assurance, easy ordering |
+| **Buyer (bulk/consumer)** | Larger institutional or individual bulk buyer | Volume discounts, quality grading, delivery coordination |
+
+---
+
+## 3. Core Feature 1: Online Marketplace
+
+### Description
+A digital marketplace connecting farmers, FPOs, individual buyers, consumers, and bulk buyers for direct, transparent transactions.
+
+### User Stories
+- As a farmer, I can create a listing for my produce (crop type, quantity, price, location, harvest date) so buyers can find and purchase it.
+- As an FPO, I can aggregate multiple farmers' listings into a single bulk listing.
+- As a buyer, I can search/filter listings by crop, location, price range, and quality grade.
+- As a buyer, I can place an order and see order status.
+- As a farmer/FPO, I can view and manage incoming orders.
+
+### Functional Requirements
+- User registration/login (Farmer, FPO, Buyer roles)
+- Listing creation, edit, delete (crop, quantity, unit, price/unit, location, photos, harvest/availability date)
+- Search & filter (crop type, price range, location/radius, quality grade)
+- Order placement flow (select quantity → confirm → order created)
+- Order status tracking (Placed → Confirmed → Ready → Completed/Cancelled)
+- Basic in-app messaging or contact reveal between buyer and seller (optional for MVP — decide based on time)
+
+### Non-Functional Requirements
+- Mobile-responsive (majority of users will be on phones)
+- Works on low-bandwidth connections (optimize images, avoid heavy assets)
+
+### Out of Scope (for hackathon)
+- Payment gateway/escrow integration (can be mocked/simulated for demo)
+- Dispute resolution system
+- Advanced seller ratings/reviews (nice-to-have if time permits)
+
+### Data Model (high-level, not final)
+`User (role: farmer/fpo/buyer), Listing, Order, OrderItem, Location`
+
+---
+
+## 4. Core Feature 2: Regional Language Support
+
+### Description
+Multi-language UI support so farmers with limited English/Hindi comfort can use the platform in their own language.
+
+### User Stories
+- As a farmer, I can switch the app's language to my preferred regional language.
+- As a farmer, I see all core marketplace text (listing creation, orders, navigation) in my chosen language.
+
+### Functional Requirements
+- Language selector (at minimum: English + Hindi + 1-2 additional regional languages, e.g., Marathi, Telugu — pick based on team's demo region)
+- All static UI strings externalized into translation files (i18n structure), not hardcoded
+- Language preference persists per user session/account
+
+### Non-Functional Requirements
+- Should not require full re-translation effort mid-build — use a structured i18n approach (e.g., JSON key-value translation files) from day one so adding languages later is cheap
+
+### Out of Scope (for hackathon)
+- Real-time translation of user-generated free text (listing descriptions, messages) — static UI translation only
+- Voice-based interaction (belongs to the separate Voice Chatbot stretch feature)
+
+---
+
+## 5. Core Feature 3: Crop Quality Assessment (Image-Based Grading)
+
+### Description
+Farmers upload a photo of their produce; the system returns a simple quality grade (e.g., Good / Medium / Poor) based on visible characteristics (size, color, surface defects). This grade attaches to the listing as a trust signal for buyers.
+
+### User Stories
+- As a farmer, I can upload a photo of my produce when creating a listing and receive a quality grade.
+- As a buyer, I can see the quality grade on a listing before ordering.
+
+### Functional Requirements
+- Image upload during listing creation
+- Grading model/service scoped to **1–2 crop types** for the demo (e.g., tomato, onion — pick based on what has available datasets/pretrained models)
+- Output: simple 3-tier grade (Good/Medium/Poor) with a confidence indicator, or a fallback message if the model isn't confident
+- Grade displayed on the listing card and detail page
+
+### Implementation Approach
+- Use a pretrained/fine-tuned image classification model (or a vision-capable LLM API call) rather than training from scratch
+- Keep the scope to 1–2 crops for demo credibility — do not attempt broad multi-crop, multi-defect grading
+
+### Non-Functional Requirements
+- Grading response time should be fast enough not to block the listing flow (consider async processing with a "grading in progress" state if needed)
+
+### Out of Scope (for hackathon)
+- Sensor-based/spectral quality analysis
+- Fine-grained grading (numeric scores, detailed defect breakdown) — 3-tier is sufficient
+- Grading for crops beyond the chosen 1–2
+
+---
+
+## 6. Core Feature 4: Logistics Support (Scoped: Pickup/Delivery Coordination)
+
+### Description
+**Scope decision needed from your team before build — recommend Option A below unless you've already decided otherwise.**
+
+| Option | Scope | Recommendation |
+|---|---|---|
+| A. Pickup/delivery slot coordination | Order includes an estimated pickup/delivery window; no real routing | **Recommended** — simplest, still demoable |
+| B. Logistics partner directory + request | Farmers/buyers can browse and request local transport providers | Feasible if Option A is done early with time to spare |
+| C. Full routing/live tracking | Real-time GPS tracking, route optimization | **Not recommended** — out of realistic hackathon scope |
+
+### User Stories (Option A)
+- As a buyer, when I place an order, I can select or am assigned a delivery/pickup window.
+- As a farmer, I can see the delivery window associated with my confirmed orders.
+- As a buyer/farmer, I can mark an order as "picked up" / "delivered" to update order status.
+
+### Functional Requirements
+- Delivery window selection or auto-assignment tied to Order
+- Status update triggers order state transition (Ready → Completed)
+- (If Option B is chosen instead/also) Simple directory of transport providers with contact info and a "request pickup" action (no live tracking)
+
+### Out of Scope
+- Real-time GPS tracking
+- Route optimization
+- Third-party carrier API integration
+- Cold-chain monitoring
+
+---
+
+## 7. Cross-Feature Notes
+
+- **Dependency order for build sequencing:** Marketplace → (Regional Language Support can be built in parallel on top of UI as it's completed) → Crop Quality Assessment (plugs into listing creation) → Logistics (plugs into order flow, needs Marketplace orders to exist first).
+- **Data sharing:** Quality grade and delivery status should both be visible attributes on the Order/Listing objects — design these tables to accommodate both from the start rather than bolting on later.
+
+---
+
+## 8. Success Metrics (for demo/pitch)
+
+- End-to-end demo: farmer creates a listing with photo → gets quality grade → buyer searches, finds, and orders → delivery window assigned → order completed — all in the selected regional language.
+- Judges can see the "why" (RBI price-gap data, Amul-model framing) directly reflected in the "how" (marketplace cuts steps, quality grade replaces middleman dispute, language removes access barrier).
+
+---
+
+## 9. Future / Stretch Features (Not in this build phase)
+
+- AI-Powered Recommendations & Suggestions (pricing/selling guidance, can consume quality + demand data later)
+- AI-Based Demand Prediction (needs real transaction data to be credible — bootstrap from Marketplace data post-hackathon)
+- AI Voice Chatbot Support (depends on Regional Language Support being solid first; ASR/TTS quality in Indian regional languages is high-risk for a hackathon timeframe)
+- Full Logistics (live tracking, route optimization, cold-chain monitoring)
+- Payments/escrow integration
+- Farmer/FPO verification system
+
+---
+
+## 10. Open Decisions (team needs to confirm before/at build start)
+
+1. Which 2-3 regional languages to support for the demo (pick based on team's home region for authentic translation)?
+2. Which 1-2 crops to support for Quality Assessment?
+3. Logistics scope: confirm Option A (recommended) vs B?
+4. Is a mocked/simulated payment step needed for demo realism, or do orders complete without payment simulation?

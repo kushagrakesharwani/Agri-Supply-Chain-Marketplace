@@ -6,6 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
-}
+export type ListListingsParams = {
+cropType?: string;
+/**
+ * @minimum 0
+ */
+minPrice?: number;
+/**
+ * @minimum 0
+ */
+maxPrice?: number;
+sellerId?: string;
+};

@@ -5,7 +5,10 @@
  * Marketplace API for the Agri Supply Chain Platform
  * OpenAPI spec version: 0.1.0
  */
+import type { OrderStatus } from './orderStatus';
 
-export interface HealthStatus {
-  status: string;
-}
+export type ListOrdersParams = {
+buyerId?: string;
+sellerId?: string;
+status?: OrderStatus;
+};

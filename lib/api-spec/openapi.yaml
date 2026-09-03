@@ -3,20 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Marketplace API for the Agri Supply Chain Platform
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: Marketplace users
+  - name: listings
+    description: Produce listings
+  - name: orders
+    description: Marketplace orders
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +29,462 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /users:
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a marketplace user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a marketplace user
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /listings:
+    get:
+      operationId: listListings
+      tags: [listings]
+      summary: Search and filter produce listings
+      parameters:
+        - name: cropType
+          in: query
+          schema:
+            type: string
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+            minimum: 0
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+            minimum: 0
+        - name: sellerId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Matching listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Listing"
+    post:
+      operationId: createListing
+      tags: [listings]
+      summary: Create a produce listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListingInput"
+      responses:
+        "201":
+          description: Created listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /listings/{listingId}:
+    get:
+      operationId: getListing
+      tags: [listings]
+      summary: Get a produce listing
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+      responses:
+        "200":
+          description: Listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateListing
+      tags: [listings]
+      summary: Update a produce listing
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ListingUpdate"
+      responses:
+        "200":
+          description: Updated listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteListing
+      tags: [listings]
+      summary: Delete a produce listing
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+      responses:
+        "204":
+          description: Listing deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List orders for a buyer or listing seller
+      parameters:
+        - name: buyerId
+          in: query
+          schema:
+            type: string
+        - name: sellerId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/OrderStatus"
+      responses:
+        "200":
+          description: Matching orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place an order for a listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Created order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Not enough quantity available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get an order
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      responses:
+        "200":
+          description: Order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /orders/{orderId}/status:
+    patch:
+      operationId: updateOrderStatus
+      tags: [orders]
+      summary: Advance an order through its lifecycle
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusUpdate"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Invalid status transition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    ListingId:
+      name: listingId
+      in: path
+      required: true
+      schema:
+        type: string
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
       properties:
         status:
           type: string
+      required: [status]
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [farmer, fpo, buyer]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, email, role, createdAt, updatedAt]
+    UserInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [farmer, fpo, buyer]
+      required: [name, role]
+    Listing:
+      type: object
+      properties:
+        id:
+          type: string
+        sellerId:
+          type: string
+        cropType:
+          type: string
+        quantity:
+          type: number
+        availableQuantity:
+          type: number
+        unit:
+          type: string
+        pricePerUnit:
+          type: number
+        location:
+          type: string
+        photoUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
+        - id
+        - sellerId
+        - cropType
+        - quantity
+        - availableQuantity
+        - unit
+        - pricePerUnit
+        - location
+        - photoUrl
+        - createdAt
+        - updatedAt
+    ListingInput:
+      type: object
+      properties:
+        sellerId:
+          type: string
+        cropType:
+          type: string
+          minLength: 1
+          maxLength: 100
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 30
+        pricePerUnit:
+          type: number
+          exclusiveMinimum: 0
+        location:
+          type: string
+          minLength: 1
+        photoUrl:
+          type: ["string", "null"]
+      required: [sellerId, cropType, quantity, unit, pricePerUnit, location]
+    ListingUpdate:
+      type: object
+      properties:
+        cropType:
+          type: string
+          minLength: 1
+          maxLength: 100
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 30
+        pricePerUnit:
+          type: number
+          exclusiveMinimum: 0
+        location:
+          type: string
+          minLength: 1
+        photoUrl:
+          type: ["string", "null"]
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        buyerId:
+          type: string
+        listingId:
+          type: string
+        quantity:
+          type: number
+        unitPrice:
+          type: number
+        totalAmount:
+          type: number
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - buyerId
+        - listingId
+        - quantity
+        - unitPrice
+        - totalAmount
         - status
-
+        - createdAt
+        - updatedAt
+    OrderInput:
+      type: object
+      properties:
+        buyerId:
+          type: string
+        listingId:
+          type: string
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+      required: [buyerId, listingId, quantity]
+    OrderStatus:
+      type: string
+      enum: [placed, confirmed, ready, completed]
+    OrderStatusUpdate:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        actorId:
+          type: string
+      required: [status, actorId]

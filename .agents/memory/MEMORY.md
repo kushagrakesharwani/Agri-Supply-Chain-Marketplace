@@ -1,0 +1,1 @@
+- [OpenAPI Zod generation](zod-generation.md) — keep generated schemas compatible with the workspace’s installed Zod import when adding OpenAPI formats.
