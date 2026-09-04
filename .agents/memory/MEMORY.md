@@ -1,1 +1,2 @@
 - [OpenAPI Zod generation](zod-generation.md) — keep generated schemas compatible with the workspace’s installed Zod import when adding OpenAPI formats.
+- [Browser test runtime](browser-test-runtime.md) — Playwright Chromium needs Nix graphics, audio, and browser libraries in this environment.
