@@ -61,6 +61,8 @@ import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient();
 const SESSION_KEY = 'agrilink-current-user';
+const LANGUAGE_KEY = 'agrilink-language';
+type Language = 'en' | 'hi';
 const roles: { value: UserInputRole; label: string; detail: string; icon: typeof Sprout }[] = [
   { value: 'farmer', label: 'Farmer', detail: 'I grow and supply produce', icon: Sprout },
   { value: 'fpo', label: 'FPO', detail: 'We coordinate several growers', icon: Store },
@@ -72,6 +74,68 @@ const deliveryWindowOptions = [
   'Tomorrow · 14:00–17:00',
   'Day after tomorrow · 9:00–12:00',
 ];
+const translations = {
+  en: {
+    nav: { tradeDesk: 'Trade desk', addProduce: 'Add produce', findProduce: 'Find produce', myOrders: 'My orders' },
+    listing: {
+      back: 'Back to trade desk',
+      eyebrow: 'Put it on the market',
+      title: 'List a fresh lot.',
+      description: 'Give buyers the details they need to make a confident order. You can update or remove the lot from your trade desk.',
+      cropLabel: 'What are you selling?',
+      cropPlaceholder: 'e.g. Red onions',
+      quantityLabel: 'Total quantity',
+      quantityPlaceholder: 'e.g. 800',
+      unitLabel: 'Unit',
+      unitPlaceholder: 'kg, crates, bags',
+      priceLabel: 'Price per unit',
+      pricePlaceholder: 'e.g. 32',
+      locationLabel: 'Pickup location',
+      locationPlaceholder: 'e.g. Nashik, MH',
+      photoLabel: 'Crop photo',
+      photoOptional: '(optional, tomatoes supported)',
+      photoHelp: 'Upload one image up to 8 MB. Tomato photos receive an AI quality grade.',
+      existingPhoto: 'Or use an existing photo URL',
+      publish: 'Publish this lot',
+      uploading: 'Uploading photo…',
+      asideEyebrow: 'A useful listing',
+      asideTitle: 'Specific details build trust.',
+      tipOne: 'Name the crop the way buyers know it.',
+      tipTwo: 'Use a real pickup location.',
+      tipThree: 'Keep quantity available and price clear.',
+    },
+  },
+  hi: {
+    nav: { tradeDesk: 'व्यापार डेस्क', addProduce: 'उपज जोड़ें', findProduce: 'उपज खोजें', myOrders: 'मेरे ऑर्डर' },
+    listing: {
+      back: 'ट्रेड डेस्क पर वापस जाएँ',
+      eyebrow: 'बाज़ार में जोड़ें',
+      title: 'ताज़ी उपज सूचीबद्ध करें।',
+      description: 'खरीदारों को भरोसे के साथ ऑर्डर करने के लिए ज़रूरी विवरण दें। आप ट्रेड डेस्क से लॉट को अपडेट या हटा सकते हैं।',
+      cropLabel: 'आप क्या बेच रहे हैं?',
+      cropPlaceholder: 'जैसे लाल प्याज़',
+      quantityLabel: 'कुल मात्रा',
+      quantityPlaceholder: 'जैसे 800',
+      unitLabel: 'इकाई',
+      unitPlaceholder: 'किलो, क्रेट, बोरी',
+      priceLabel: 'प्रति इकाई कीमत',
+      pricePlaceholder: 'जैसे 32',
+      locationLabel: 'पिकअप स्थान',
+      locationPlaceholder: 'जैसे नासिक, महाराष्ट्र',
+      photoLabel: 'फसल की तस्वीर',
+      photoOptional: '(वैकल्पिक, टमाटर समर्थित)',
+      photoHelp: '8 MB तक एक तस्वीर अपलोड करें। टमाटर की तस्वीरों को AI गुणवत्ता ग्रेड मिलता है।',
+      existingPhoto: 'या मौजूदा तस्वीर का URL इस्तेमाल करें',
+      publish: 'यह लॉट प्रकाशित करें',
+      uploading: 'तस्वीर अपलोड हो रही है…',
+      asideEyebrow: 'उपयोगी लिस्टिंग',
+      asideTitle: 'विस्तृत जानकारी भरोसा बढ़ाती है।',
+      tipOne: 'फसल का वही नाम लिखें जिसे खरीदार जानते हैं।',
+      tipTwo: 'वास्तविक पिकअप स्थान डालें।',
+      tipThree: 'मात्रा उपलब्ध रखें और कीमत साफ़ लिखें।',
+    },
+  },
+} as const;
 
 function readSession(): User | null {
   try {
@@ -128,6 +192,18 @@ function QualityBadge({ grade }: { grade?: Listing['qualityGrade'] | null }) {
   return <Badge className={className} data-testid={`badge-quality-${grade.toLowerCase()}`}>AI quality: {grade}</Badge>;
 }
 
+function readLanguage(): Language {
+  try {
+    return localStorage.getItem(LANGUAGE_KEY) === 'hi' ? 'hi' : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+function LanguageToggle({ language, onChange }: { language: Language; onChange: (language: Language) => void }) {
+  return <button type="button" onClick={() => onChange(language === 'en' ? 'hi' : 'en')} className="rounded-lg border border-current/20 px-2.5 py-1.5 text-[11px] font-semibold tracking-wide text-current/70 transition-colors hover:bg-current/10" aria-label={language === 'en' ? 'Switch to Hindi' : 'Switch to English'} data-testid="button-language-toggle"><span className={language === 'en' ? 'text-primary' : ''}>EN</span><span className="mx-1 opacity-40">·</span><span className={language === 'hi' ? 'text-primary' : ''}>हिन्दी</span></button>;
+}
+
 function Mark({ small = false }: { small?: boolean }) {
   return (
     <div className={`flex items-center gap-2 ${small ? 'text-base' : 'text-lg'}`} data-testid="brand-agrilink">
@@ -140,18 +216,19 @@ function Mark({ small = false }: { small?: boolean }) {
   );
 }
 
-function Shell({ user, onLogout, children }: { user: User | null; onLogout: () => void; children: ReactNode }) {
+function Shell({ user, onLogout, language, onLanguageChange, children }: { user: User | null; onLogout: () => void; language: Language; onLanguageChange: (language: Language) => void; children: ReactNode }) {
   const [location] = useLocation();
   const isLogin = location === '/login';
   if (isLogin || !user) return <>{children}</>;
   const isSeller = user.role !== 'buyer';
+  const navCopy = translations[language].nav;
   const links = isSeller
-    ? [{ href: '/orders', label: 'Trade desk', icon: ClipboardList }, { href: '/listings/new', label: 'Add produce', icon: Plus }]
-    : [{ href: '/browse', label: 'Find produce', icon: Search }, { href: '/orders', label: 'My orders', icon: ClipboardList }];
+    ? [{ href: '/orders', label: navCopy.tradeDesk, icon: ClipboardList }, { href: '/listings/new', label: navCopy.addProduce, icon: Plus }]
+    : [{ href: '/browse', label: navCopy.findProduce, icon: Search }, { href: '/orders', label: navCopy.myOrders, icon: ClipboardList }];
   return (
     <div className="market-shell flex bg-background text-foreground">
       <aside className="hidden min-h-[100dvh] w-[248px] shrink-0 flex-col bg-sidebar px-5 py-6 text-sidebar-foreground md:flex">
-        <Link href={isSeller ? '/orders' : '/browse'} className="mb-12" data-testid="link-sidebar-home"><Mark /></Link>
+        <div className="mb-12 flex items-center justify-between gap-2"><Link href={isSeller ? '/orders' : '/browse'} data-testid="link-sidebar-home"><Mark /></Link><LanguageToggle language={language} onChange={onLanguageChange} /></div>
         <p className="eyebrow mb-3 text-sidebar-foreground/50">Your workspace</p>
         <nav className="space-y-1" aria-label="Main navigation">
           {links.map(({ href, label, icon: Icon }) => (
@@ -175,8 +252,9 @@ function Shell({ user, onLogout, children }: { user: User | null; onLogout: () =
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border/70 bg-background/90 px-4 backdrop-blur md:hidden">
-          <Link href={isSeller ? '/orders' : '/browse'} data-testid="link-mobile-home"><Mark small /></Link>
+            <Link href={isSeller ? '/orders' : '/browse'} data-testid="link-mobile-home"><Mark small /></Link>
           <div className="flex items-center gap-2">
+            <LanguageToggle language={language} onChange={onLanguageChange} />
             <Link href={isSeller ? '/listings/new' : '/orders'} className="rounded-lg p-2 text-muted-foreground" data-testid="link-mobile-action"><ClipboardList className="h-5 w-5" /></Link>
             <button onClick={onLogout} className="rounded-lg p-2 text-muted-foreground" aria-label="Log out" data-testid="button-mobile-logout"><LogOut className="h-5 w-5" /></button>
           </div>
@@ -324,8 +402,9 @@ function ListingCard({ listing, index }: { listing: Listing; index: number }) {
   );
 }
 
-function NewListing({ user }: { user: User }) {
+function NewListing({ user, language }: { user: User; language: Language }) {
   const [, setLocation] = useLocation();
+  const t = translations[language].listing;
   const createListing = useCreateListing();
   const qc = useQueryClient();
   const [message, setMessage] = useState('');
@@ -368,36 +447,36 @@ function NewListing({ user }: { user: User }) {
   });
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 md:px-10 md:py-12">
-      <Link href="/orders" className="mb-9 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" data-testid="link-back-trade-desk"><ChevronLeft className="h-4 w-4" /> Back to trade desk</Link>
+      <Link href="/orders" className="mb-9 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" data-testid="link-back-trade-desk"><ChevronLeft className="h-4 w-4" /> {t.back}</Link>
       <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
         <div>
-          <p className="eyebrow text-primary">Put it on the market</p>
-          <h1 className="serif mt-3 text-5xl tracking-[-.04em]" data-testid="heading-new-listing">List a fresh lot.</h1>
-          <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">Give buyers the details they need to make a confident order. You can update or remove the lot from your trade desk.</p>
+          <p className="eyebrow text-primary">{t.eyebrow}</p>
+          <h1 className="serif mt-3 text-5xl tracking-[-.04em]" data-testid="heading-new-listing">{t.title}</h1>
+          <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">{t.description}</p>
           <Card className="mt-8 border-border bg-card">
             <CardContent className="p-5 md:p-7">
               <Form {...form}><form onSubmit={submit} className="space-y-5" data-testid="form-new-listing">
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="sm:col-span-2"><label className="mb-2 block text-sm font-medium" htmlFor="cropType">What are you selling?</label><Input id="cropType" placeholder="e.g. Red onions" {...form.register('cropType', { required: 'Crop name is required.' })} data-testid="input-crop-type" />{form.formState.errors.cropType ? <p className="mt-1 text-xs text-destructive">{form.formState.errors.cropType.message}</p> : null}</div>
-                  <div><label className="mb-2 block text-sm font-medium" htmlFor="quantity">Total quantity</label><Input id="quantity" type="number" min="0.01" step="0.01" placeholder="e.g. 800" {...form.register('quantity', { required: 'Quantity is required.', min: 0.01 })} data-testid="input-quantity" /></div>
-                  <div><label className="mb-2 block text-sm font-medium" htmlFor="unit">Unit</label><Input id="unit" placeholder="kg, crates, bags" {...form.register('unit', { required: 'Unit is required.' })} data-testid="input-unit" /></div>
-                  <div><label className="mb-2 block text-sm font-medium" htmlFor="pricePerUnit">Price per unit</label><Input id="pricePerUnit" type="number" min="0.01" step="0.01" placeholder="e.g. 32" {...form.register('pricePerUnit', { required: 'Price is required.', min: 0.01 })} data-testid="input-price" /></div>
-                  <div><label className="mb-2 block text-sm font-medium" htmlFor="location">Pickup location</label><Input id="location" placeholder="e.g. Nashik, MH" {...form.register('location', { required: 'Location is required.' })} data-testid="input-location" /></div>
+                  <div className="sm:col-span-2"><label className="mb-2 block text-sm font-medium" htmlFor="cropType">{t.cropLabel}</label><Input id="cropType" placeholder={t.cropPlaceholder} {...form.register('cropType', { required: 'Crop name is required.' })} data-testid="input-crop-type" />{form.formState.errors.cropType ? <p className="mt-1 text-xs text-destructive">{form.formState.errors.cropType.message}</p> : null}</div>
+                  <div><label className="mb-2 block text-sm font-medium" htmlFor="quantity">{t.quantityLabel}</label><Input id="quantity" type="number" min="0.01" step="0.01" placeholder={t.quantityPlaceholder} {...form.register('quantity', { required: 'Quantity is required.', min: 0.01 })} data-testid="input-quantity" /></div>
+                  <div><label className="mb-2 block text-sm font-medium" htmlFor="unit">{t.unitLabel}</label><Input id="unit" placeholder={t.unitPlaceholder} {...form.register('unit', { required: 'Unit is required.' })} data-testid="input-unit" /></div>
+                  <div><label className="mb-2 block text-sm font-medium" htmlFor="pricePerUnit">{t.priceLabel}</label><Input id="pricePerUnit" type="number" min="0.01" step="0.01" placeholder={t.pricePlaceholder} {...form.register('pricePerUnit', { required: 'Price is required.', min: 0.01 })} data-testid="input-price" /></div>
+                  <div><label className="mb-2 block text-sm font-medium" htmlFor="location">{t.locationLabel}</label><Input id="location" placeholder={t.locationPlaceholder} {...form.register('location', { required: 'Location is required.' })} data-testid="input-location" /></div>
                   <div className="sm:col-span-2">
-                    <label className="mb-2 block text-sm font-medium" htmlFor="photoFile">Crop photo <span className="font-normal text-muted-foreground">(optional, tomatoes supported)</span></label>
+                    <label className="mb-2 block text-sm font-medium" htmlFor="photoFile">{t.photoLabel} <span className="font-normal text-muted-foreground">{t.photoOptional}</span></label>
                     <Input id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} data-testid="input-photo-file" />
-                    <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><FileImage className="h-3.5 w-3.5" /> Upload one image up to 8 MB. Tomato photos receive an AI quality grade.</p>
+                    <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><FileImage className="h-3.5 w-3.5" /> {t.photoHelp}</p>
                     {photoFile ? <p className="mt-2 text-xs text-primary" data-testid="text-selected-photo">{photoFile.name}</p> : null}
-                    <div className="mt-4"><label className="mb-2 block text-xs font-medium text-muted-foreground" htmlFor="photoUrl">Or use an existing photo URL</label><Input id="photoUrl" placeholder="https://..." {...form.register('photoUrl')} data-testid="input-photo-url" /></div>
+                    <div className="mt-4"><label className="mb-2 block text-xs font-medium text-muted-foreground" htmlFor="photoUrl">{t.existingPhoto}</label><Input id="photoUrl" placeholder="https://..." {...form.register('photoUrl')} data-testid="input-photo-url" /></div>
                   </div>
                 </div>
                 {message ? <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" data-testid="state-listing-error">{message}</p> : null}
-                <Button type="submit" className="h-11 w-full sm:w-auto" disabled={createListing.isPending || uploadingPhoto} data-testid="button-publish-listing">{createListing.isPending || uploadingPhoto ? <LoaderCircle className="animate-spin" /> : <Plus />} {uploadingPhoto ? 'Uploading photo…' : 'Publish this lot'}</Button>
+                 <Button type="submit" className="h-11 w-full sm:w-auto" disabled={createListing.isPending || uploadingPhoto} data-testid="button-publish-listing">{createListing.isPending || uploadingPhoto ? <LoaderCircle className="animate-spin" /> : <Plus />} {uploadingPhoto ? t.uploading : t.publish}</Button>
               </form></Form>
             </CardContent>
           </Card>
         </div>
-        <aside className="hidden lg:block"><div className="line-art sticky top-8 rounded-2xl border border-border p-6"><p className="eyebrow text-primary">A useful listing</p><h2 className="serif mt-3 text-2xl">Specific details build trust.</h2><ul className="mt-6 space-y-4 text-sm text-muted-foreground"><li className="flex gap-3"><span className="mono text-accent">01</span> Name the crop the way buyers know it.</li><li className="flex gap-3"><span className="mono text-accent">02</span> Use a real pickup location.</li><li className="flex gap-3"><span className="mono text-accent">03</span> Keep quantity available and price clear.</li></ul></div></aside>
+         <aside className="hidden lg:block"><div className="line-art sticky top-8 rounded-2xl border border-border p-6"><p className="eyebrow text-primary">{t.asideEyebrow}</p><h2 className="serif mt-3 text-2xl">{t.asideTitle}</h2><ul className="mt-6 space-y-4 text-sm text-muted-foreground"><li className="flex gap-3"><span className="mono text-accent">01</span> {t.tipOne}</li><li className="flex gap-3"><span className="mono text-accent">02</span> {t.tipTwo}</li><li className="flex gap-3"><span className="mono text-accent">03</span> {t.tipThree}</li></ul></div></aside>
       </div>
     </div>
   );
@@ -512,13 +591,13 @@ function SellerListings({ listings, isLoading, editingId, editPrice, onEdit, onC
   return <Card className="border-border bg-card"><CardHeader><div className="flex items-center justify-between"><div><p className="eyebrow text-primary">Your supply</p><CardTitle className="serif mt-2 text-2xl">Active lots</CardTitle></div><Link href="/listings/new" className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground" aria-label="Add listing" data-testid="link-add-listing"><Plus className="h-4 w-4" /></Link></div></CardHeader><CardContent className="space-y-3">{isLoading ? <div className="skeleton h-20 rounded-xl" data-testid="skeleton-seller-listings" /> : listings.length === 0 ? <div className="rounded-xl bg-muted p-4 text-sm text-muted-foreground" data-testid="state-no-seller-listings">No active lots. Publish your next harvest.</div> : listings.map((listing) => <div className="rounded-xl border border-border p-3" key={listing.id} data-testid={`card-seller-listing-${listing.id}`}><div className="flex items-start justify-between gap-2"><div><p className="font-medium">{listing.cropType}</p><p className="mt-1 text-xs text-muted-foreground">{listing.availableQuantity} {listing.unit} available</p></div><p className="font-mono text-sm text-primary">{money(listing.pricePerUnit)}</p></div>{editingId === listing.id ? <div className="mt-3 flex gap-2"><Input type="number" min="0.01" value={editPrice} onChange={(event) => onPriceChange(event.target.value)} aria-label="Updated listing price" data-testid={`input-edit-price-${listing.id}`} /><Button size="sm" onClick={() => onSave(listing)} data-testid={`button-save-listing-${listing.id}`}>Save</Button><Button size="sm" variant="ghost" onClick={onCancel} data-testid={`button-cancel-listing-${listing.id}`}>Cancel</Button></div> : <div className="mt-3 flex gap-2"><Button size="sm" variant="outline" onClick={() => onEdit(listing)} data-testid={`button-edit-listing-${listing.id}`}>Edit price</Button><Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(listing)} data-testid={`button-delete-listing-${listing.id}`}>Remove</Button></div>}</div>)}</CardContent></Card>;
 }
 
-function Router({ user, onLogin, onLogout }: { user: User | null; onLogin: (user: User) => void; onLogout: () => void }) {
+function Router({ user, onLogin, onLogout, language, onLanguageChange }: { user: User | null; onLogin: (user: User) => void; onLogout: () => void; language: Language; onLanguageChange: (language: Language) => void }) {
   const [location, setLocation] = useLocation();
   useEffect(() => {
     if (!user && location !== '/login') setLocation('/login');
     if (user && location === '/login') setLocation(user.role === 'buyer' ? '/browse' : '/orders');
   }, [location, setLocation, user]);
-  return <Shell user={user} onLogout={onLogout}><ErrorBoundary resetKey={location}><Switch><Route path="/login"><Login onLogin={onLogin} /></Route><Route path="/browse"><Guard user={user}><Browse /></Guard></Route><Route path="/listings/new"><Guard user={user}><NewListing user={user as User} /></Guard></Route><Route path="/listings/:listingId"><Guard user={user}><ListingDetail user={user as User} /></Guard></Route><Route path="/orders"><Guard user={user}><Orders user={user as User} /></Guard></Route><Route path="/"><Redirect to={user?.role === 'buyer' ? '/browse' : '/orders'} /></Route><Route component={NotFound} /></Switch></ErrorBoundary></Shell>;
+  return <Shell user={user} onLogout={onLogout} language={language} onLanguageChange={onLanguageChange}><ErrorBoundary resetKey={location}><Switch><Route path="/login"><Login onLogin={onLogin} /></Route><Route path="/browse"><Guard user={user}><Browse /></Guard></Route><Route path="/listings/new"><Guard user={user}><NewListing user={user as User} language={language} /></Guard></Route><Route path="/listings/:listingId"><Guard user={user}><ListingDetail user={user as User} /></Guard></Route><Route path="/orders"><Guard user={user}><Orders user={user as User} /></Guard></Route><Route path="/"><Redirect to={user?.role === 'buyer' ? '/browse' : '/orders'} /></Route><Route component={NotFound} /></Switch></ErrorBoundary></Shell>;
 }
 
 function Guard({ user, children }: { user: User | null; children: ReactNode }) {
@@ -527,9 +606,11 @@ function Guard({ user, children }: { user: User | null; children: ReactNode }) {
 
 function App() {
   const [user, setUser] = useState<User | null>(readSession);
+  const [language, setLanguage] = useState<Language>(readLanguage);
   const login = (nextUser: User) => { setUser(nextUser); };
   const logout = () => { localStorage.removeItem(SESSION_KEY); setUser(null); };
-  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router user={user} onLogin={login} onLogout={logout} /></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
+  const changeLanguage = (nextLanguage: Language) => { setLanguage(nextLanguage); localStorage.setItem(LANGUAGE_KEY, nextLanguage); };
+  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><Router user={user} onLogin={login} onLogout={logout} language={language} onLanguageChange={changeLanguage} /></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
 }
 
 export default App;
