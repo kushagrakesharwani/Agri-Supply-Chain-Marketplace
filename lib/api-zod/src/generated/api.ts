@@ -14,6 +14,8 @@ import * as zod from 'zod';
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
+
+
 /**
  * @summary Create a marketplace user
  */
@@ -36,6 +38,7 @@ export const CreateUserResponse = zod.object({
   "updatedAt": zod.coerce.date()
 })
 
+
 /**
  * @summary Get a marketplace user
  */
@@ -51,6 +54,30 @@ export const GetUserResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Request a presigned URL for a listing image
+ */
+export const requestStorageUploadUrlBodyNameMax = 255;
+
+export const requestStorageUploadUrlBodySizeMax = 8388608;
+
+
+
+export const RequestStorageUploadUrlBody = zod.object({
+  "sellerId": zod.string(),
+  "name": zod.string().min(1).max(requestStorageUploadUrlBodyNameMax),
+  "size": zod.number().min(1).max(requestStorageUploadUrlBodySizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp'])
+})
+
+export const RequestStorageUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string()
+})
+
+
 /**
  * @summary Search and filter produce listings
  */
@@ -76,7 +103,9 @@ export const ListListingsResponseItem = zod.object({
   "unit": zod.string(),
   "pricePerUnit": zod.number(),
   "location": zod.string(),
-  "photoUrl": zod.string().nullable(),
+  "photoUrl": zod.string().nullish(),
+  "qualityGrade": zod.enum(['Good', 'Medium', 'Poor']).nullish(),
+  "qualityReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -116,7 +145,9 @@ export const CreateListingResponse = zod.object({
   "unit": zod.string(),
   "pricePerUnit": zod.number(),
   "location": zod.string(),
-  "photoUrl": zod.string().nullable(),
+  "photoUrl": zod.string().nullish(),
+  "qualityGrade": zod.enum(['Good', 'Medium', 'Poor']).nullish(),
+  "qualityReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -138,7 +169,9 @@ export const GetListingResponse = zod.object({
   "unit": zod.string(),
   "pricePerUnit": zod.number(),
   "location": zod.string(),
-  "photoUrl": zod.string().nullable(),
+  "photoUrl": zod.string().nullish(),
+  "qualityGrade": zod.enum(['Good', 'Medium', 'Poor']).nullish(),
+  "qualityReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -180,7 +213,9 @@ export const UpdateListingResponse = zod.object({
   "unit": zod.string(),
   "pricePerUnit": zod.number(),
   "location": zod.string(),
-  "photoUrl": zod.string().nullable(),
+  "photoUrl": zod.string().nullish(),
+  "qualityGrade": zod.enum(['Good', 'Medium', 'Poor']).nullish(),
+  "qualityReason": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

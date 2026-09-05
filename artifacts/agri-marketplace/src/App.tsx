@@ -10,6 +10,7 @@ import {
   CircleCheck,
   ClipboardList,
   Filter,
+  FileImage,
   Leaf,
   LoaderCircle,
   LogOut,
@@ -40,6 +41,7 @@ import {
   useListOrders,
   useUpdateListing,
   useUpdateOrderStatus,
+  requestStorageUploadUrl,
   type Listing,
   type Order,
   type OrderStatus,
@@ -107,6 +109,17 @@ function MessageState({ kind, title, detail, action }: { kind: 'loading' | 'empt
 function StatusBadge({ status }: { status: OrderStatus }) {
   const className = status === 'completed' ? 'border-primary/20 bg-primary/10 text-primary' : status === 'ready' ? 'border-accent/40 bg-accent/20 text-accent-foreground' : status === 'confirmed' ? 'border-sky-700/20 bg-sky-100 text-sky-900' : 'border-border bg-muted text-muted-foreground';
   return <Badge className={className} data-testid={`status-order-${status}`}>{statusLabel(status)}</Badge>;
+}
+
+function QualityBadge({ grade }: { grade?: Listing['qualityGrade'] | null }) {
+  if (!grade) return null;
+  const className =
+    grade === 'Good'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+      : grade === 'Medium'
+        ? 'border-amber-200 bg-amber-50 text-amber-800'
+        : 'border-red-200 bg-red-50 text-red-800';
+  return <Badge className={className} data-testid={`badge-quality-${grade.toLowerCase()}`}>AI quality: {grade}</Badge>;
 }
 
 function Mark({ small = false }: { small?: boolean }) {
@@ -295,7 +308,7 @@ function ListingCard({ listing, index }: { listing: Listing; index: number }) {
     <Link href={`/listings/${listing.id}`} className="group pressable overflow-hidden rounded-2xl border border-border bg-card soft-shadow" data-testid={`card-listing-${listing.id}`}>
       <div className={`relative flex h-40 items-end overflow-hidden bg-gradient-to-br ${cropColor} p-5`}>
         {listing.photoUrl ? <img src={listing.photoUrl} alt={listing.cropType} className="absolute inset-0 h-full w-full object-cover mix-blend-multiply" data-testid={`img-listing-${listing.id}`} /> : <Wheat className="absolute -bottom-6 -right-1 h-40 w-40 rotate-12 text-primary/15" />}
-        <div className="relative flex w-full items-center justify-between"><Badge className="border-card/70 bg-card/90 text-foreground" data-testid={`badge-location-${listing.id}`}><MapPin className="mr-1 h-3 w-3" /> {listing.location}</Badge><span className="rounded-full bg-sidebar px-2 py-1 font-mono text-[10px] text-sidebar-foreground">LOT {String(index + 1).padStart(2, '0')}</span></div>
+        <div className="relative flex w-full items-center justify-between gap-2"><div className="flex min-w-0 flex-wrap gap-2"><Badge className="border-card/70 bg-card/90 text-foreground" data-testid={`badge-location-${listing.id}`}><MapPin className="mr-1 h-3 w-3" /> {listing.location}</Badge><QualityBadge grade={listing.qualityGrade} /></div><span className="rounded-full bg-sidebar px-2 py-1 font-mono text-[10px] text-sidebar-foreground">LOT {String(index + 1).padStart(2, '0')}</span></div>
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between gap-3"><div><h2 className="serif text-2xl" data-testid={`text-crop-${listing.id}`}>{listing.cropType}</h2><p className="mt-1 text-xs text-muted-foreground">Listed {dateLabel(listing.createdAt)}</p></div><ArrowRight className="mt-1 h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" /></div>
@@ -310,10 +323,36 @@ function NewListing({ user }: { user: User }) {
   const createListing = useCreateListing();
   const qc = useQueryClient();
   const [message, setMessage] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const form = useForm<{ cropType: string; quantity: string; unit: string; pricePerUnit: string; location: string; photoUrl: string }>({ defaultValues: { cropType: '', quantity: '', unit: 'kg', pricePerUnit: '', location: '', photoUrl: '' } });
-  const submit = form.handleSubmit((values) => {
+  const submit = form.handleSubmit(async (values) => {
     setMessage('');
-    createListing.mutate({ data: { sellerId: user.id, cropType: values.cropType.trim(), quantity: Number(values.quantity), unit: values.unit.trim(), pricePerUnit: Number(values.pricePerUnit), location: values.location.trim(), photoUrl: values.photoUrl.trim() || null } }, {
+    let photoUrl = values.photoUrl.trim() || null;
+    if (photoFile) {
+      setUploadingPhoto(true);
+      try {
+        const upload = await requestStorageUploadUrl({
+          sellerId: user.id,
+          name: photoFile.name,
+          size: photoFile.size,
+          contentType: photoFile.type as 'image/jpeg' | 'image/png' | 'image/webp',
+        });
+        const uploadResponse = await fetch(upload.uploadURL, {
+          method: 'PUT',
+          headers: { 'Content-Type': photoFile.type },
+          body: photoFile,
+        });
+        if (!uploadResponse.ok) throw new Error('Photo upload failed');
+        photoUrl = `/api/storage${upload.objectPath}`;
+      } catch {
+        setUploadingPhoto(false);
+        setMessage('Could not upload the crop photo. Use a JPEG, PNG, or WebP image under 8 MB.');
+        return;
+      }
+      setUploadingPhoto(false);
+    }
+    createListing.mutate({ data: { sellerId: user.id, cropType: values.cropType.trim(), quantity: Number(values.quantity), unit: values.unit.trim(), pricePerUnit: Number(values.pricePerUnit), location: values.location.trim(), photoUrl } }, {
       onSuccess: (listing) => {
         qc.invalidateQueries({ queryKey: getListListingsQueryKey() });
         setLocation(`/listings/${listing.id}`);
@@ -338,10 +377,16 @@ function NewListing({ user }: { user: User }) {
                   <div><label className="mb-2 block text-sm font-medium" htmlFor="unit">Unit</label><Input id="unit" placeholder="kg, crates, bags" {...form.register('unit', { required: 'Unit is required.' })} data-testid="input-unit" /></div>
                   <div><label className="mb-2 block text-sm font-medium" htmlFor="pricePerUnit">Price per unit</label><Input id="pricePerUnit" type="number" min="0.01" step="0.01" placeholder="e.g. 32" {...form.register('pricePerUnit', { required: 'Price is required.', min: 0.01 })} data-testid="input-price" /></div>
                   <div><label className="mb-2 block text-sm font-medium" htmlFor="location">Pickup location</label><Input id="location" placeholder="e.g. Nashik, MH" {...form.register('location', { required: 'Location is required.' })} data-testid="input-location" /></div>
-                  <div className="sm:col-span-2"><label className="mb-2 block text-sm font-medium" htmlFor="photoUrl">Photo URL <span className="font-normal text-muted-foreground">(optional)</span></label><Input id="photoUrl" placeholder="https://..." {...form.register('photoUrl')} data-testid="input-photo-url" /></div>
+                  <div className="sm:col-span-2">
+                    <label className="mb-2 block text-sm font-medium" htmlFor="photoFile">Crop photo <span className="font-normal text-muted-foreground">(optional, tomatoes supported)</span></label>
+                    <Input id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} data-testid="input-photo-file" />
+                    <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><FileImage className="h-3.5 w-3.5" /> Upload one image up to 8 MB. Tomato photos receive an AI quality grade.</p>
+                    {photoFile ? <p className="mt-2 text-xs text-primary" data-testid="text-selected-photo">{photoFile.name}</p> : null}
+                    <div className="mt-4"><label className="mb-2 block text-xs font-medium text-muted-foreground" htmlFor="photoUrl">Or use an existing photo URL</label><Input id="photoUrl" placeholder="https://..." {...form.register('photoUrl')} data-testid="input-photo-url" /></div>
+                  </div>
                 </div>
                 {message ? <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive" data-testid="state-listing-error">{message}</p> : null}
-                <Button type="submit" className="h-11 w-full sm:w-auto" disabled={createListing.isPending} data-testid="button-publish-listing">{createListing.isPending ? <LoaderCircle className="animate-spin" /> : <Plus />} Publish this lot</Button>
+                <Button type="submit" className="h-11 w-full sm:w-auto" disabled={createListing.isPending || uploadingPhoto} data-testid="button-publish-listing">{createListing.isPending || uploadingPhoto ? <LoaderCircle className="animate-spin" /> : <Plus />} {uploadingPhoto ? 'Uploading photo…' : 'Publish this lot'}</Button>
               </form></Form>
             </CardContent>
           </Card>
@@ -383,11 +428,11 @@ function ListingDetail({ user }: { user: User }) {
       <Link href="/browse" className="mb-9 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" data-testid="link-back-market"><ChevronLeft className="h-4 w-4" /> Back to market</Link>
       <div className="grid gap-8 lg:grid-cols-[1.1fr_.9fr]">
         <div>
-          <div className="relative flex min-h-[360px] items-end overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-accent/30 to-orange-100 p-7">
+           <div className="relative flex min-h-[360px] items-end overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-accent/30 to-orange-100 p-7">
             {item.photoUrl ? <img src={item.photoUrl} alt={item.cropType} className="absolute inset-0 h-full w-full object-cover mix-blend-multiply" data-testid={`img-detail-${item.id}`} /> : <Wheat className="absolute -bottom-10 -right-5 h-80 w-80 rotate-12 text-primary/15" />}
-            <div className="relative flex items-center gap-2"><Badge className="border-card/60 bg-card/90 text-foreground" data-testid={`badge-detail-location-${item.id}`}><MapPin className="mr-1 h-3 w-3" /> {item.location}</Badge><Badge className="border-sidebar bg-sidebar text-sidebar-foreground">Available now</Badge></div>
+            <div className="relative flex flex-wrap items-center gap-2"><Badge className="border-card/60 bg-card/90 text-foreground" data-testid={`badge-detail-location-${item.id}`}><MapPin className="mr-1 h-3 w-3" /> {item.location}</Badge><Badge className="border-sidebar bg-sidebar text-sidebar-foreground">Available now</Badge><QualityBadge grade={item.qualityGrade} /></div>
           </div>
-          <div className="mt-7"><p className="eyebrow text-primary">Produce lot</p><h1 className="serif mt-2 text-5xl tracking-[-.04em]" data-testid={`heading-listing-${item.id}`}>{item.cropType}</h1><p className="mt-3 text-sm text-muted-foreground">Listed on {dateLabel(item.createdAt)} · Pickup in {item.location}</p></div>
+           <div className="mt-7"><p className="eyebrow text-primary">Produce lot</p><h1 className="serif mt-2 text-5xl tracking-[-.04em]" data-testid={`heading-listing-${item.id}`}>{item.cropType}</h1><p className="mt-3 text-sm text-muted-foreground">Listed on {dateLabel(item.createdAt)} · Pickup in {item.location}</p>{item.qualityReason ? <p className="mt-4 max-w-xl rounded-xl border border-border bg-card p-4 text-sm leading-6 text-muted-foreground" data-testid={`text-quality-reason-${item.id}`}><span className="font-medium text-foreground">AI assessment:</span> {item.qualityReason}</p> : null}</div>
         </div>
         <Card className="h-fit border-border bg-card soft-shadow">
           <CardHeader><p className="eyebrow text-muted-foreground">Straight from the source</p><CardTitle className="serif text-2xl">Make an order</CardTitle></CardHeader>

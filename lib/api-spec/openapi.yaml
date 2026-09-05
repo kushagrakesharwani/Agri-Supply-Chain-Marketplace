@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: storage
+    description: Marketplace image storage
   - name: users
     description: Marketplace users
   - name: listings
@@ -63,6 +65,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /storage/uploads/request-url:
+    post:
+      operationId: requestStorageUploadUrl
+      tags: [storage]
+      summary: Request a presigned URL for a listing image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StorageUploadInput"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorageUploadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
   /listings:
@@ -368,6 +392,12 @@ components:
           type: string
         photoUrl:
           type: ["string", "null"]
+        qualityGrade:
+          allOf:
+            - $ref: "#/components/schemas/QualityGrade"
+          nullable: true
+        qualityReason:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -384,6 +414,8 @@ components:
         - pricePerUnit
         - location
         - photoUrl
+         - qualityGrade
+         - qualityReason
         - createdAt
         - updatedAt
     ListingInput:
@@ -433,6 +465,34 @@ components:
           minLength: 1
         photoUrl:
           type: ["string", "null"]
+    QualityGrade:
+      type: string
+      enum: [Good, Medium, Poor]
+    StorageUploadInput:
+      type: object
+      properties:
+        sellerId:
+          type: string
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        size:
+          type: number
+          minimum: 1
+          maximum: 8388608
+        contentType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+      required: [sellerId, name, size, contentType]
+    StorageUploadResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+      required: [uploadURL, objectPath]
     Order:
       type: object
       properties:

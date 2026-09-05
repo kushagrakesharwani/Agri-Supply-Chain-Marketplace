@@ -22,8 +22,11 @@ import {
   type User,
 } from "@workspace/db";
 import { and, desc, eq, gte, ilike, inArray, lte } from "drizzle-orm";
+import { assessTomatoQuality } from "../lib/crop-quality";
+import { ObjectStorageService } from "../lib/objectStorage";
 
 const router: IRouter = Router();
+const objectStorage = new ObjectStorageService();
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -178,6 +181,29 @@ router.post(
     assertSeller(seller);
     assertPositiveQuantity(body.quantity);
 
+    let qualityGrade: "Good" | "Medium" | "Poor" | null = null;
+    let qualityReason: string | null = null;
+    if (
+      body.photoUrl &&
+      /^(tomato|tomatoes)$/i.test(body.cropType.trim()) &&
+      body.photoUrl.startsWith("/api/storage/objects/")
+    ) {
+      try {
+        const objectPath = body.photoUrl.slice("/api/storage".length);
+        const file = await objectStorage.getObjectEntityFile(objectPath);
+        const [image, metadata] = await Promise.all([file.download(), file.getMetadata()]);
+        const mimeType = metadata[0].contentType;
+        if (!mimeType || !["image/jpeg", "image/png", "image/webp"].includes(mimeType)) {
+          throw new MarketplaceError(400, "Listing photos must be JPEG, PNG, or WebP images");
+        }
+        ({ grade: qualityGrade, reason: qualityReason } = await assessTomatoQuality(image[0], mimeType));
+      } catch (error) {
+        if (error instanceof MarketplaceError) throw error;
+        req.log.error({ err: error }, "Tomato quality assessment failed");
+        throw new MarketplaceError(502, "Tomato quality assessment is unavailable. Please try again.");
+      }
+    }
+
     const [listing] = await db
       .insert(listingsTable)
       .values({
@@ -189,6 +215,8 @@ router.post(
         pricePerUnit: body.pricePerUnit,
         location: body.location.trim(),
         photoUrl: body.photoUrl ?? null,
+        qualityGrade,
+        qualityReason,
       })
       .returning();
 

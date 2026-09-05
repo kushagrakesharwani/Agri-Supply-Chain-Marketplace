@@ -37,6 +37,8 @@ export const listingsTable = pgTable(
     }).notNull(),
     location: text("location").notNull(),
     photoUrl: text("photo_url"),
+    qualityGrade: varchar("quality_grade", { length: 20 }),
+    qualityReason: text("quality_reason"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

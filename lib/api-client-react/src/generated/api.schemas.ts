@@ -52,6 +52,15 @@ export interface UserInput {
   role: UserInputRole;
 }
 
+export type QualityGrade = typeof QualityGrade[keyof typeof QualityGrade];
+
+
+export const QualityGrade = {
+  Good: 'Good',
+  Medium: 'Medium',
+  Poor: 'Poor',
+} as const;
+
 export interface Listing {
   id: string;
   sellerId: string;
@@ -62,7 +71,10 @@ export interface Listing {
   pricePerUnit: number;
   location: string;
   /** @nullable */
-  photoUrl: string | null;
+  photoUrl?: string | null;
+  qualityGrade?: QualityGrade | null;
+  /** @nullable */
+  qualityReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -108,6 +120,35 @@ export interface ListingUpdate {
   location?: string;
   /** @nullable */
   photoUrl?: string | null;
+}
+
+export type StorageUploadInputContentType = typeof StorageUploadInputContentType[keyof typeof StorageUploadInputContentType];
+
+
+export const StorageUploadInputContentType = {
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface StorageUploadInput {
+  sellerId: string;
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 8388608
+     */
+  size: number;
+  contentType: StorageUploadInputContentType;
+}
+
+export interface StorageUploadResponse {
+  uploadURL: string;
+  objectPath: string;
 }
 
 export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
@@ -172,3 +213,4 @@ buyerId?: string;
 sellerId?: string;
 status?: OrderStatus;
 };
+

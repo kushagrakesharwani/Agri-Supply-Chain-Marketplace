@@ -32,6 +32,8 @@ import type {
   Order,
   OrderInput,
   OrderStatusUpdate,
+  StorageUploadInput,
+  StorageUploadResponse,
   User,
   UserInput
 } from './api.schemas';
@@ -287,6 +289,77 @@ export function useGetUser<TData = Awaited<ReturnType<typeof getUser>>, TError =
 
 
 
+
+export const getRequestStorageUploadUrlUrl = () => {
+
+
+
+
+  return `/api/storage/uploads/request-url`
+}
+
+/**
+ * @summary Request a presigned URL for a listing image
+ */
+export const requestStorageUploadUrl = async (storageUploadInput: StorageUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<StorageUploadResponse> => {
+
+  return customFetch<StorageUploadResponse>(getRequestStorageUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(storageUploadInput)
+  }
+);}
+
+
+
+
+
+export const getRequestStorageUploadUrlMutationOptions = <TError = ErrorType<BadRequestResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestStorageUploadUrl>>, TError,{data: BodyType<StorageUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestStorageUploadUrl>>, TError,{data: BodyType<StorageUploadInput>}, TContext> => {
+
+const mutationKey = ['requestStorageUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestStorageUploadUrl>>, {data: BodyType<StorageUploadInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestStorageUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestStorageUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestStorageUploadUrl>>>
+    export type RequestStorageUploadUrlMutationBody = BodyType<StorageUploadInput>
+    export type RequestStorageUploadUrlMutationError = ErrorType<BadRequestResponse | NotFoundResponse>
+
+    /**
+ * @summary Request a presigned URL for a listing image
+ */
+export const useRequestStorageUploadUrl = <TError = ErrorType<BadRequestResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestStorageUploadUrl>>, TError,{data: BodyType<StorageUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestStorageUploadUrl>>,
+        TError,
+        {data: BodyType<StorageUploadInput>},
+        TContext
+      > => {
+      return useMutation(getRequestStorageUploadUrlMutationOptions(options));
+    }
 
 export const getListListingsUrl = (params?: ListListingsParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -966,3 +1039,4 @@ export const useUpdateOrderStatus = <TError = ErrorType<BadRequestResponse | Not
       > => {
       return useMutation(getUpdateOrderStatusMutationOptions(options));
     }
+

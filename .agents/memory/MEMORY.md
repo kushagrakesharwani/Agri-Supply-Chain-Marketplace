@@ -1,2 +1,3 @@
 - [OpenAPI Zod generation](zod-generation.md) — keep generated schemas compatible with the workspace’s installed Zod import when adding OpenAPI formats.
 - [Browser test runtime](browser-test-runtime.md) — Playwright Chromium needs Nix graphics, audio, and browser libraries in this environment.
+- [Gemini model availability](gemini-model-availability.md) — direct Gemini API keys may reject older model IDs; use the provider’s current error guidance when a model is retired.

@@ -5,6 +5,7 @@
  * Marketplace API for the Agri Supply Chain Platform
  * OpenAPI spec version: 0.1.0
  */
+import type { QualityGrade } from './qualityGrade';
 
 export interface Listing {
   id: string;
@@ -16,7 +17,10 @@ export interface Listing {
   pricePerUnit: number;
   location: string;
   /** @nullable */
-  photoUrl: string | null;
+  photoUrl?: string | null;
+  qualityGrade?: QualityGrade | null;
+  /** @nullable */
+  qualityReason?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
