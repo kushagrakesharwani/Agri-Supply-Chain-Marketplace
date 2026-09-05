@@ -13,7 +13,9 @@ export interface Order {
   listingId: string;
   quantity: number;
   unitPrice: number;
-  totalAmount: number;
+  totalAmount?: number;
+  /** @nullable */
+  deliveryWindow?: string | null;
   status: OrderStatus;
   createdAt: Date;
   updatedAt: Date;

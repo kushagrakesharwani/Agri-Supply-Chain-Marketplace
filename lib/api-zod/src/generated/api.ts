@@ -246,7 +246,8 @@ export const ListOrdersResponseItem = zod.object({
   "listingId": zod.string(),
   "quantity": zod.number(),
   "unitPrice": zod.number(),
-  "totalAmount": zod.number(),
+  "totalAmount": zod.number().optional(),
+  "deliveryWindow": zod.string().nullish(),
   "status": zod.enum(['placed', 'confirmed', 'ready', 'completed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -259,12 +260,15 @@ export const ListOrdersResponse = zod.array(ListOrdersResponseItem)
  */
 export const createOrderBodyQuantityExclusiveMin = 0;
 
+export const createOrderBodyDeliveryWindowMax = 120;
+
 
 
 export const CreateOrderBody = zod.object({
   "buyerId": zod.string(),
   "listingId": zod.string(),
-  "quantity": zod.number().gt(createOrderBodyQuantityExclusiveMin)
+  "quantity": zod.number().gt(createOrderBodyQuantityExclusiveMin),
+  "deliveryWindow": zod.string().min(1).max(createOrderBodyDeliveryWindowMax).optional()
 })
 
 export const CreateOrderResponse = zod.object({
@@ -273,7 +277,8 @@ export const CreateOrderResponse = zod.object({
   "listingId": zod.string(),
   "quantity": zod.number(),
   "unitPrice": zod.number(),
-  "totalAmount": zod.number(),
+  "totalAmount": zod.number().optional(),
+  "deliveryWindow": zod.string().nullish(),
   "status": zod.enum(['placed', 'confirmed', 'ready', 'completed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -293,7 +298,8 @@ export const GetOrderResponse = zod.object({
   "listingId": zod.string(),
   "quantity": zod.number(),
   "unitPrice": zod.number(),
-  "totalAmount": zod.number(),
+  "totalAmount": zod.number().optional(),
+  "deliveryWindow": zod.string().nullish(),
   "status": zod.enum(['placed', 'confirmed', 'ready', 'completed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -318,7 +324,8 @@ export const UpdateOrderStatusResponse = zod.object({
   "listingId": zod.string(),
   "quantity": zod.number(),
   "unitPrice": zod.number(),
-  "totalAmount": zod.number(),
+  "totalAmount": zod.number().optional(),
+  "deliveryWindow": zod.string().nullish(),
   "status": zod.enum(['placed', 'confirmed', 'ready', 'completed']),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()

@@ -508,6 +508,8 @@ components:
           type: number
         totalAmount:
           type: number
+        deliveryWindow:
+          type: ["string", "null"]
         status:
           $ref: "#/components/schemas/OrderStatus"
         createdAt:
@@ -523,6 +525,7 @@ components:
         - quantity
         - unitPrice
         - totalAmount
+         - deliveryWindow
         - status
         - createdAt
         - updatedAt
@@ -536,6 +539,10 @@ components:
         quantity:
           type: number
           exclusiveMinimum: 0
+        deliveryWindow:
+          type: string
+          minLength: 1
+          maxLength: 120
       required: [buyerId, listingId, quantity]
     OrderStatus:
       type: string

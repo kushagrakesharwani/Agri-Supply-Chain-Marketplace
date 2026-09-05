@@ -27,6 +27,7 @@ import { ObjectStorageService } from "../lib/objectStorage";
 
 const router: IRouter = Router();
 const objectStorage = new ObjectStorageService();
+const DEFAULT_DELIVERY_WINDOW = "Next available · 9:00–12:00";
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -424,6 +425,7 @@ router.post(
           quantity: body.quantity,
           unitPrice: listing.pricePerUnit,
           totalAmount: Math.round(body.quantity * listing.pricePerUnit * 100) / 100,
+          deliveryWindow: body.deliveryWindow?.trim() || DEFAULT_DELIVERY_WINDOW,
           status: "placed",
         })
         .returning();

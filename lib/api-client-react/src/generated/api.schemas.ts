@@ -167,7 +167,9 @@ export interface Order {
   listingId: string;
   quantity: number;
   unitPrice: number;
-  totalAmount: number;
+  totalAmount?: number;
+  /** @nullable */
+  deliveryWindow?: string | null;
   status: OrderStatus;
   createdAt: string;
   updatedAt: string;
@@ -178,6 +180,11 @@ export interface OrderInput {
   listingId: string;
   /** @exclusiveMinimum 0 */
   quantity: number;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  deliveryWindow?: string;
 }
 
 export interface OrderStatusUpdate {

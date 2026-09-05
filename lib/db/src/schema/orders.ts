@@ -4,6 +4,7 @@ import {
   index,
   pgEnum,
   pgTable,
+  text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -43,6 +44,7 @@ export const ordersTable = pgTable(
       scale: 2,
       mode: "number",
     }).notNull(),
+    deliveryWindow: text("delivery_window"),
     status: orderStatusEnum("status").notNull().default("placed"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
