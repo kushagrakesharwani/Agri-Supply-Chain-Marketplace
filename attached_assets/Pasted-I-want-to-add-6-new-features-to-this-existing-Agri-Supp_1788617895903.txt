@@ -1,0 +1,70 @@
+I want to add 6 new features to this existing Agri Supply Chain Marketplace 
+project. Please implement them ONE AT A TIME, strictly in the order listed 
+below, and follow the existing architecture patterns already used in this 
+codebase:
+
+- Backend: Express 5, in artifacts/api-server/src/routes/
+- DB: Postgres + Drizzle ORM, schema in lib/db/src/schema/
+- API contract: OpenAPI spec in lib/api-spec/openapi.yaml, with Orval 
+  codegen producing Zod schemas + React Query hooks in lib/api-client-react
+- Frontend: React + TypeScript in artifacts/agri-marketplace/src, using 
+  shadcn/ui components, TanStack Query, wouter for routing, Tailwind
+
+After each feature, run `pnpm run typecheck` and fix any errors before 
+moving to the next feature. Do not modify existing marketplace order/listing 
+logic unless required to integrate the new feature.
+
+PRIORITY: Features 1–5 are REQUIRED and must all be completed and working. 
+Feature 6 is LOWEST PRIORITY and OPTIONAL — only attempt it if features 1–5 
+are fully done, tested, and there is clearly time remaining. If time is 
+tight, skip Feature 6 entirely rather than risk breaking anything else.
+
+---
+
+FEATURE 1 — Crop Quality Assessment (Gemini Vision)
+When a farmer creates a produce listing, let them optionally upload one photo 
+of the crop. Send the image to Gemini Vision API (use GEMINI_API_KEY from 
+Replit Secrets) with a prompt asking it to classify the crop quality as 
+"Good", "Medium", or "Poor" and return a one-line reason, as structured JSON. 
+Store the grade and reason on the listing (add columns to the listings table 
+via a new Drizzle migration). Display the grade as a colored badge on listing 
+cards and the listing detail page (green/yellow/red). Scope this to a single 
+crop type (tomatoes) for now — do not build a generic multi-crop grading system.
+
+FEATURE 2 — Hindi Language Toggle (token version)
+Add a simple i18n setup (a plain key-value translation object is fine, no 
+need for a full i18n library) covering only these UI strings: navigation 
+labels, "Add Produce", "Place Order", role labels (Farmer/FPO/Buyer), and 
+the four order status names. Add a language toggle button (EN/HI) in the 
+header that swaps these strings. Do not attempt to translate the entire app.
+
+FEATURE 3 — Search & Filter Improvements
+On the Browse/listings page, add: filter by location (dropdown or text match 
+against the listing's location field), and a sort control (price low-to-high, 
+price high-to-low, newest first). Keep existing crop and price-range filters 
+working alongside these.
+
+FEATURE 4 — Simple Dashboard / Stats View
+Add a lightweight dashboard page showing: total active listings, total orders, 
+average price per crop type, and orders-by-status counts. Use the recharts 
+library (already a dependency) for one simple bar or pie chart. Pull this 
+from existing listings/orders data — no new AI or prediction logic needed.
+
+FEATURE 5 — Farmer/Buyer Profile Page
+Add a basic profile page per user showing: name, role, location, and (for 
+farmers/FPOs) their active listings; (for buyers) their order history. Keep 
+it read-only for now, no editing needed unless trivial to add.
+
+FEATURE 6 (OPTIONAL, LOWEST PRIORITY) — Logistics / Pickup Coordination
+Only attempt after 1–5 are fully working. Add a simple pickup/delivery 
+window field to the order flow: when a buyer places an order, let them 
+select a preferred pickup/delivery window from a few fixed options 
+(e.g. "Morning", "Afternoon", "Evening" for the next 3 days). Store this 
+on the order and display it to both farmer and buyer on the order detail 
+view. Do NOT build real logistics routing, delivery partner integration, 
+or live tracking — this is just a coordination field, kept intentionally 
+minimal.
+
+Start with Feature 1 only. Confirm it's working and typechecked before 
+moving to Feature 2, and continue this pattern through Feature 5. Only 
+move to Feature 6 if I explicitly confirm there's time left.
